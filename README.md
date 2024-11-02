@@ -13,17 +13,4 @@ This is a simple web application that allows users to chat with historical fivgu
     ├── index.html         # Frontend HTML file
     ├── styles.css         # CSS for styling
     └── script.js          # JavaScript for frontend interactivity
-
-Requirements
-
-Python 3.8+
-Qdrant account (for cloud database access)
-OpenAI API key
-Dependencies
-The following packages are required for the application:
-
-FastAPI: Web framework for building the API backend.
-Uvicorn: ASGI server to serve the FastAPI application.
-Qdrant Client: Interface to connect to Qdrant’s vector database.
-OpenAI API: Used to generate responses based on the retrieved context.
-Python Dotenv: For loading environment variables from the .env file.
+```
