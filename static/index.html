@@ -2,21 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chat with Philosophers</title>
+    <title>Chat with Historical Figures</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Chat with Philosophers</h1>
-        <select id="person-select">
-            <!-- Options will be populated dynamically -->
-        </select>
-        <div id="chat-window">
+        <h1>Chat with Historical Figures</h1>
+        <div id="selected-person" class="selected-person">Friedrich Nietzsche</div>
+        <div id="chat-window" class="chat-window">
             <!-- Chat messages will appear here -->
         </div>
+        <div id="loading-bubble" class="loading-bubble hidden">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
         <div class="input-area">
-            <input type="text" id="user-input" placeholder="Type your message...">
-            <button id="send-button">Send</button>
+            <select id="person-select" class="person-select">
+                <!-- Options will be populated dynamically -->
+            </select>
+            <input type="text" id="user-input" class="user-input" placeholder="Type your message...">
+            <button id="send-button" class="send-button">Send</button>
         </div>
     </div>
     <script src="/static/script.js"></script>

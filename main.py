@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
 from langchain.embeddings import OpenAIEmbeddings
 import openai
@@ -33,15 +33,29 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 class UserMessage(BaseModel):
     message: str
     person: str  # e.g., 'Friedrich Nietzsche'
+    previous_message: Optional[str] = None  # Optional field for the last message
 
 class ChatResponse(BaseModel):
     reply: str
 
-async def generate_reply(person: str, message: str) -> str:
+# Map each person to their respective Qdrant collection name
+person_collection_map = {
+    "Friedrich Nietzsche": "nietzsche",
+    "Marcus Aurelius": "aurelius",
+    "Ted Kaczynski": "kaczynski"
+}
+
+async def generate_reply(person: str, message: str, previous_message: Optional[str] = None) -> str:
+    # Retrieve the appropriate collection name based on the person
+    collection_name = person_collection_map.get(person)
+    
+    if not collection_name:
+        return "This person is not available in the system."
+    
     # Retrieve relevant chunks from Qdrant
     query_vector = embeddings.embed_query(message)
     search_results = qdrant_client.search(
-        collection_name='nietzsche',
+        collection_name=collection_name,
         query_vector=query_vector,
         limit=5  # Adjust based on your preference
     )
@@ -49,8 +63,12 @@ async def generate_reply(person: str, message: str) -> str:
     # Concatenate retrieved texts
     context = "\n\n".join([hit.payload['text'] for hit in search_results])
     
+    # Include the previous message in the context, if available
+    if previous_message:
+        context = f"Previous message: {previous_message}\n\n" + context
+    
     # Generate response using OpenAI GPT
-    prompt = f"""As {person}, answer the following question based on the context below. If you cant answer based on the context,
+    prompt = f"""As {person}, answer the following question based on the context below. If you can't answer based on the context,
                 try to answer like the person would. 
 
                 Context:
@@ -63,8 +81,10 @@ async def generate_reply(person: str, message: str) -> str:
 
     llm = OpenAI(api_key=openAI_key)
 
-    response = llm.chat.completions.create(model="gpt-4o-2024-08-06",messages=[{"role": "system", "content": "You are {person}, answer accordingly."},{"role": "user", "content": prompt}])
-
+    response = llm.chat.completions.create(model="gpt-4o-2024-08-06", messages=[
+        {"role": "system", "content": f"You are {person}, answer accordingly."},
+        {"role": "user", "content": prompt}
+    ])
 
     reply = response.choices[0].message.content
     return reply
@@ -72,7 +92,7 @@ async def generate_reply(person: str, message: str) -> str:
 # Endpoint to get available people
 @app.get("/people")
 def get_people():
-    return ["Friedrich Nietzsche"]
+    return list(person_collection_map.keys())
 
 # Endpoint to serve the index.html
 @app.get("/")
@@ -82,5 +102,5 @@ def read_index():
 # Chat endpoint
 @app.post("/chat", response_model=ChatResponse)
 async def chat(user_message: UserMessage):
-    reply = await generate_reply(user_message.person, user_message.message)
+    reply = await generate_reply(user_message.person, user_message.message, user_message.previous_message)
     return ChatResponse(reply=reply)

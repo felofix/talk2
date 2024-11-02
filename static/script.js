@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
     const personSelect = document.getElementById('person-select');
+    const loadingBubble = document.getElementById('loading-bubble');
+    const selectedPersonDisplay = document.getElementById('selected-person');
 
     // Load available 'people'
     fetch('/people')
@@ -14,7 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = person;
                 personSelect.appendChild(option);
             });
+            // Set initial selected person display
+            selectedPersonDisplay.textContent = personSelect.value;
         });
+
+    // Update selected person display when dropdown changes
+    personSelect.addEventListener('change', () => {
+        selectedPersonDisplay.textContent = personSelect.value;
+    });
 
     sendButton.addEventListener('click', () => {
         const message = userInput.value.trim();
@@ -24,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendMessage('user', message);
 
+        // Show loading bubble
+        loadingBubble.classList.remove('hidden');
+
         fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -32,6 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(response => response.json())
             .then(data => {
                 appendMessage('philosopher', data.reply);
+            })
+            .finally(() => {
+                // Hide loading bubble after receiving response
+                loadingBubble.classList.add('hidden');
             });
 
         userInput.value = '';
